@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>灯光游戏</title>
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f2f2f2;
+    }
+
+    #container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #ffffff;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    #circle {
+      width: 240px;
+      height: 240px;
+      border-radius: 50%;
+      position: relative;
+      margin-bottom: 20px;
+      background-color: #f2f2f2;
+    }
+
+    .lamp {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background-color: gray;
+      position: absolute;
+      transform-origin: center;
+    }
+
+    .switch {
+      width: 30px;
+      height: 30px;
+      background-color: white;
+      border: 2px solid black;
+      position: absolute;
+      transform-origin: center;
+      cursor: pointer;
+    }
+
+    .selected {
+      background-color: lightgreen;
+    }
+
+    .on {
+      background-color: yellow;
+    }
+
+    .off {
+      background-color: gray;
+    }
+
+    #confirmBtn, #resetBtn {
+      margin-top: 20px;
+      margin-right: 10px;
+      padding: 10px;
+      cursor: pointer;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+
+    #recordBox {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      max-width: 300px;
+      overflow: auto;
+      margin-bottom: 20px;
+      background-color: #ffffff;
+    }
+
+    #recordBox p {
+      margin: 5px 0;
+    }
+
+    .btn-container {
+      display: flex;
+    }
+  </style>
+</head>
+<body>
+
+<div id="container">
+  <div id="circle">
+    <div class="lamp" id="lamp1"></div>
+    <div class="lamp" id="lamp2"></div>
+    <div class="lamp" id="lamp3"></div>
+    <div class="lamp" id="lamp4"></div>
+
+    <div class="switch" id="switch1" onclick="toggleSwitch(1)"></div>
+    <div class="switch" id="switch2" onclick="toggleSwitch(2)"></div>
+    <div class="switch" id="switch3" onclick="toggleSwitch(3)"></div>
+    <div class="switch" id="switch4" onclick="toggleSwitch(4)"></div>
+  </div>
+
+  <div class="btn-container">
+    <button id="confirmBtn" onclick="confirmSelection()">确认</button>
+    <button id="resetBtn" onclick="resetGame()">复位</button>
+  </div>
+
+  <div id="recordBox"></div>
+</div>
+
+<script>
+  let selectedSwitches = [];
+  let record = [];
+  let lastLightsState = [];
+
+  // Initialize random lights state
+  for (let i = 0; i < 4; i++) {
+    lastLightsState[i] = Math.random() < 0.5;
+    const lamp = document.getElementById(`lamp${i + 1}`);
+    const angle = (i * 90 - 90) * (Math.PI / 180); // Adjust for alignment and convert degrees to radians
+    const radius = 90;
+    const x = Math.cos(angle) * radius + 120;
+    const y = Math.sin(angle) * radius + 120;
+    lamp.style.left = `${x - 15}px`; // Adjust for lamp width
+    lamp.style.top = `${y - 15}px`;  // Adjust for lamp height
+    lamp.classList.toggle('on', lastLightsState[i]);
+    lamp.classList.toggle('off', !lastLightsState[i]);
+
+    const switchElem = document.getElementById(`switch${i + 1}`);
+    const switchAngle = (i * 90) * (Math.PI / 180);
+    const switchRadius = 130;
+    const switchX = Math.cos(switchAngle) * switchRadius + 120;
+    const switchY = Math.sin(switchAngle) * switchRadius + 120;
+    switchElem.style.left = `${switchX - 15}px`; // Adjust for switch width
+    switchElem.style.top = `${switchY - 15}px`; // Adjust for switch height
+  }
+
+  function toggleSwitch(switchNumber) {
+    // Toggle the selected switch
+    const index = selectedSwitches.indexOf(switchNumber);
+    if (index === -1) {
+      selectedSwitches.push(switchNumber);
+      document.getElementById(`switch${switchNumber}`).classList.add('selected');
+    } else {
+      selectedSwitches.splice(index, 1);
+      document.getElementById(`switch${switchNumber}`).classList.remove('selected');
+    }
+  }
+
+  function confirmSelection() {
+    if (selectedSwitches.length > 0) {
+      // Get the number of positions to shift
+      const shiftAmount = Math.floor(Math.random() * 4) + 1;
+
+      // Shift the control of lights
+      const shiftedSwitches = [];
+      for (let i = 0; i < selectedSwitches.length; i++) {
+        shiftedSwitches[i] = (selectedSwitches[i] + shiftAmount - 1) % 4 + 1;
+      }
+
+      // Update the lights state based on the last state
+      const lightsState = [...lastLightsState];
+      for (let i = 0; i < shiftedSwitches.length; i++) {
+        lightsState[shiftedSwitches[i] - 1] = !lightsState[shiftedSwitches[i] - 1];
+      }
+
+      // Record the state
+      record.push(lightsState.map(state => state ? 1 : 0));
+
+      // Display the record
+      displayRecord();
+
+      // Update the last lights state
+      lastLightsState = [...lightsState];
+
+      // Update the lamps based on the lights state
+      for (let i = 1; i <= 4; i++) {
+        const lamp = document.getElementById(`lamp${i}`);
+        lamp.classList.toggle('on', lastLightsState[i - 1]);
+        lamp.classList.toggle('off', !lastLightsState[i - 1]);
+      }
+
+      // Reset all switches to initial state
+      for (let i = 1; i <= 4; i++) {
+        document.getElementById(`switch${i}`).classList.remove('selected');
+      }
+
+      selectedSwitches = [];
+    } else {
+      alert('请先选择一个或多个开关！');
+    }
+  }
+
+  function resetGame() {
+    // Reset all switches and lamps to initial state
+    for (let i = 1; i <= 4; i++) {
+      document.getElementById(`switch${i}`).classList.remove('selected');
+    }
+
+    selectedSwitches = [];
+
+    for (let i = 1; i <= 4; i++) {
+      const lamp = document.getElementById(`lamp${i}`);
+      lastLightsState[i - 1] = Math.random() < 0.5;
+      lamp.classList.toggle('on', lastLightsState[i - 1]);
+      lamp.classList.toggle('off', !lastLightsState[i - 1]);
+    }
+
+    // Clear the record
+    record = [];
+    displayRecord();
+  }
+
+  function displayRecord() {
+    const recordBox = document.getElementById('recordBox');
+    recordBox.innerHTML = '';
+    
+    for (let i = 0; i < record.length; i++) {
+      const lightsInfo = record[i].join('');
+      const entry = `<p>第${i + 1}次：${lightsInfo}</p>`;
+      recordBox.innerHTML += entry;
+    }
+  }
+</script>
+
+</body>
+</html>
